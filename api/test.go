@@ -15,3 +15,6 @@ func GetDataByTime(c *gin.Context) {
     }
     doResp(c, user, nil)
 }
+
+
+

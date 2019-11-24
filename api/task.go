@@ -33,7 +33,7 @@ type AddTaskReq struct {
     Title    string `json:"title" binding:"required"`
     State    uint   `json:"state"`
     Priority uint   `json:"priority"`
-    Content  string `json:"content"`
+    Content  string `json:"content" binding:"required"`
 }
 type AddTaskResp struct {
     Id int64 `json:"id"`
