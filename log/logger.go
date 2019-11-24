@@ -15,6 +15,9 @@ func GetLogger() *logrus.Logger {
 func Init() {
     file := "./log/" + time.Now().Format("2006-01-02") + ".log "
     logFile, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
+    if err!=nil && os.IsNotExist(err){
+        logFile, _ = os.Create(file)
+    }
     if nil != err {
         panic(err)
     }
