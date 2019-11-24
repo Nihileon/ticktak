@@ -1,0 +1,12 @@
+[Unit]
+Description=ticktak server
+
+[Service]
+ExecStart=/bin/bash -c "$HOME/ticktak/ticktak_server"
+ExecReload=/bin/bash -c "kill $(ps -ef | grep 'ticktak_server' | awk '{print $2}')"
+Restart=always
+RestartSec=2s500ms
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

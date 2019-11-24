@@ -13,6 +13,7 @@ type Config struct {
     SecretKey     string   `yaml:"SecretKey"`
     RedisAddr     string   `yaml:"RedisAddr"`
     MemoryOrRedis string   `yaml:"MemoryOrRedis"`
+    ListenAddr    string   `yaml:"ListenAddr"`
 }
 
 func InitConfig() (*Config, error) {

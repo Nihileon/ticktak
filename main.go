@@ -39,13 +39,10 @@ func main() {
 
     r.Use(middlewares.JWTAuth())
 
-    //r.GET("/", api.RedirectToCloud)
-
     r.OPTIONS("api/*pattern", middlewares.OPTIONSHandle)
 
     platformAPI := r.Group("api")
     platformAPI.GET("/dataByTime", api.GetDataByTime)
 
-    r.Run(":8080")
-
+    r.Run(config.ListenAddr)
 }
