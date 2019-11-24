@@ -6,6 +6,8 @@ const (
     HomePageUrl = "http://aliyun.nihil.top"
 )
 
+
+
 func RedirectToCloud(c *gin.Context) {
     w := c.Writer
     w.Header().Set("Location", HomePageUrl)

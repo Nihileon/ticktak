@@ -43,6 +43,12 @@ func main() {
 
     platformAPI := r.Group("api")
     platformAPI.GET("/dataByTime", api.GetDataByTime)
+    platformAPI.GET("/task/list", api.GetTasksByUsername)
+    platformAPI.POST("/task/update/state", api.ChangeTaskState)
+    platformAPI.POST("/task/update/priority", api.ChangeTaskPriority)
+    platformAPI.POST("/task/add", api.AddTask)
+    platformAPI.GET("/task/list/state/", api.GetTasksByUsernameState)
+    platformAPI.GET("/task/list/priority/", api.GetTasksByUsernamePriority)
 
     r.Run(config.ListenAddr)
 }

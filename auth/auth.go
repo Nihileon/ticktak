@@ -8,8 +8,11 @@ import (
     "github.com/nihileon/ticktak/log"
     "github.com/nihileon/ticktak/middlewares"
     "github.com/nihileon/ticktak/models"
+    "regexp"
     "time"
 )
+
+var validUsername = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 type Response struct {
     ErrCode int         `json:"error_code"`
@@ -44,6 +47,10 @@ func RegisterUser(c *gin.Context) {
     req := &models.UserInsert{}
     if err := c.BindJSON(req); err != nil {
         doResp(c, nil, err)
+        return
+    }
+    if validUsername.MatchString(req.Username) == false {
+        doResp(c, nil, fmt.Errorf("invalid username"))
         return
     }
     log.GetLogger().Info("add user: %s", req.Username)

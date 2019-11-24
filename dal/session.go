@@ -13,6 +13,7 @@ import (
 
 const (
     UserTable = "t_user"
+    TaskTable= "t_task"
 )
 
 const (
