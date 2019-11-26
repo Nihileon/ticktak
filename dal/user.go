@@ -31,3 +31,13 @@ func InsertUser(session *Session, user *models.UserInsert) (int64, error) {
     id, err := session.Insert(c, *user)
     return id, err
 }
+
+func UpdateLoginInfo(session *Session, currentUsername string, newUser *models.LoginUpdate) error {
+    c := sqlc.NewSQLc(UserTable)
+    c.And(sqlc.Equal("username", currentUsername))
+    err := session.Update(c, *newUser)
+    if err != nil {
+        return err
+    }
+    return nil
+}

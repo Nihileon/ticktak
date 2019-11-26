@@ -29,7 +29,6 @@ const (
 )
 
 type AddTaskReq struct {
-    Username string `json:"username" binding:"required"`
     Title    string `json:"title" binding:"required"`
     State    uint   `json:"state"`
     Priority uint   `json:"priority"`
@@ -58,7 +57,7 @@ func AddTask(c *gin.Context) {
 
     log.GetLogger().Info("Add task, user: %s, title: %v", user, req.Title)
     insertTask := &models.TaskInsert{
-        Username: req.Username,
+        Username: user,
         Title:    req.Title,
         State:    req.State,
         Priority: req.Priority,

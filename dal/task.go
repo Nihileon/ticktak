@@ -89,6 +89,16 @@ func UpdateTask(session *Session, id int64, task *models.TaskUpdate) error {
     return err
 }
 
+func UpdateTaskUsername(session *Session, oldUsername, newUsername string) error {
+    c := sqlc.NewSQLc(TaskTable)
+    task := &models.TaskUsernameUpdate{
+        Username: newUsername,
+    }
+    c.And(sqlc.Equal("username", oldUsername))
+    err := session.Update(c, *task)
+    return err
+}
+
 func DeleteTask(session *Session, id int64) error {
     c := sqlc.NewSQLc(TaskTable)
     c.And(sqlc.Equal("id", id))

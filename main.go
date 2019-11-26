@@ -42,7 +42,7 @@ func main() {
     r.OPTIONS("api/*pattern", middlewares.OPTIONSHandle)
 
     platformAPI := r.Group("api")
-    platformAPI.GET("/dataByTime", api.GetDataByTime)
+    platformAPI.POST("/user/update", api.ChangeCurrentUser)
     platformAPI.GET("/task/list", api.GetTasksByUsername)
     platformAPI.POST("/task/update/state", api.ChangeTaskState)
     platformAPI.POST("/task/update/priority", api.ChangeTaskPriority)

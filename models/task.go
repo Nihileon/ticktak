@@ -28,6 +28,10 @@ type TaskUpdate struct {
     ModifyTime string `json:"modify_time"`
 }
 
+type TaskUsernameUpdate struct {
+    Username string `json:"username"`
+}
+
 type TaskStatePriorityUpdate struct {
     State      uint   `json:"state"`
     Priority   uint   `json:"priority"`
