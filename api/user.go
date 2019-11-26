@@ -51,7 +51,10 @@ func ChangeCurrentUser(c *gin.Context) {
         doResp(c, nil, err)
         return
     }
-
+    if req.Username == currentUser {
+        err := session.Commit()
+        doResp(c, "successfully change your username or password", err)
+    }
     if err := dal.UpdateTaskUsername(session, currentUser, req.Username); err != nil {
         doResp(c, nil, err)
         return
