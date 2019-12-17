@@ -42,11 +42,11 @@ func ChangeCurrentUser(c *gin.Context) {
         return
     }
     session := dal.FetchSession()
-
     if err := session.Begin(); err != nil {
         doResp(c, nil, err)
         return
     }
+    defer session.Rollback()
     if err := dal.UpdateLoginInfo(session, currentUser, req); err != nil {
         doResp(c, nil, err)
         return

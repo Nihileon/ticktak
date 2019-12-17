@@ -46,6 +46,20 @@ func SelectTasksByUsernamePriority(session *Session, username string, priority u
     return count, tasks, err
 }
 
+func SelectTasksByTaskID(session *Session, id int64) (*models.TaskSelect, error) {
+    c := sqlc.NewSQLc(TaskTable)
+    c.And(sqlc.Equal("id", id))
+    task := []models.TaskSelect{}
+    err := session.Select(c, &task)
+    if err != nil {
+        return nil, err
+    }
+    if len(task) != 1 {
+        return nil, fmt.Errorf("select %d rows", len(task))
+    }
+    return &task[0], nil
+}
+
 func SelectTasksByUsername(session *Session, username string, page *PageInfo) (int, []models.TaskSelect, error) {
     c := sqlc.NewSQLc(TaskTable)
     SQL := fmt.Sprintf("id IN (SELECT id FROM %s WHERE username = '%s')",
@@ -61,10 +75,31 @@ func SelectTasksByUsername(session *Session, username string, page *PageInfo) (i
     return count, tasks, err
 }
 
+func SelectTaskTagsByUsername(session *Session, username string, page *PageInfo) (int, []models.TaskTagSelect, error) {
+    c := sqlc.NewSQLc(TaskTable)
+    c.And(sqlc.Equal("username", username)).Ext(page.ToLimit())
+    count, err := session.Count(c)
+    if err != nil {
+        return count, nil, err
+    }
+    tags := []models.TaskTagSelect{}
+    err = session.Select(c, &tags)
+    return count, tags, err
+}
+
 func UpdateTaskState(session *Session, id int64, state uint) error {
     task := &models.TaskStatePriorityUpdate{}
     task.ModifyTime = timeStampNow()
     task.State = state
+    c := sqlc.NewSQLc(TaskTable)
+    c.And(sqlc.Equal("id", id))
+    err := session.Update(c, *task)
+    return err
+}
+
+func UpdateDoneTime(session *Session, id int64) error {
+    task := &models.TaskDoneTimeUpdate{}
+    task.DoneTime = timeStampNow()
     c := sqlc.NewSQLc(TaskTable)
     c.And(sqlc.Equal("id", id))
     err := session.Update(c, *task)

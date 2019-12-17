@@ -9,25 +9,6 @@ import (
     "strconv"
 )
 
-const (
-    UninitializedState = iota
-    ActiveNotDeleted
-    DoneNotDeleted
-    ExpiredNotDeleted
-    ActiveOrExpiredDeleted
-    DoneDeleted
-    UpperBoundState
-)
-
-const (
-    UninitializedPriority = iota
-    P1
-    P2
-    P3
-    P4
-    UpperBoundPriority
-)
-
 type AddTaskReq struct {
     Title    string `json:"title" binding:"required"`
     State    uint   `json:"state"`
@@ -48,11 +29,11 @@ func AddTask(c *gin.Context) {
         doResp(c, nil, err)
         return
     }
-    if req.State <= UninitializedState || req.State >= UpperBoundState {
-        req.State = ActiveNotDeleted
+    if req.State <= models.UninitializedState || req.State >= models.UpperBoundState {
+        req.State = models.ActiveNotDeleted
     }
-    if req.Priority <= UninitializedPriority || req.Priority >= UpperBoundPriority {
-        req.Priority = P2
+    if req.Priority <= models.UninitializedPriority || req.Priority >= models.UpperBoundPriority {
+        req.Priority = models.P2
     }
 
     log.GetLogger().Info("Add task, user: %s, title: %v", user, req.Title)
@@ -64,18 +45,36 @@ func AddTask(c *gin.Context) {
         Content:  req.Content,
     }
 
-    id, err := dal.InsertTask(dal.FetchSession(), insertTask)
+    session := dal.FetchSession()
+    if err := session.Begin(); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    defer session.Rollback()
+
+    id, err := dal.InsertTask(session, insertTask)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    if req.State == models.DoneNotDeleted || req.State == models.DoneDeleted {
+        err = dal.UpdateDoneTime(session, id)
+        if err != nil {
+            doResp(c, nil, err)
+            return
+        }
+    }
     resp := &AddTaskResp{
         Id: id,
     }
+    err = session.Commit()
     doResp(c, resp, err)
-
 }
 
 func GetStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityUpdate {
     info := &models.TaskStatePriorityUpdate{
-        State:    UninitializedState,
-        Priority: UninitializedPriority,
+        State:    models.UninitializedState,
+        Priority: models.UninitializedPriority,
     }
     params := c.Request.URL.Query()
 
@@ -119,7 +118,7 @@ func GetTasksByUsernameState(c *gin.Context) {
     page := GetPageInfo(c)
     statePriority := GetStatePriorityInfo(c)
     s := statePriority.State
-    if s <= UninitializedState || s >= UpperBoundState {
+    if s <= models.UninitializedState || s >= models.UpperBoundState {
         doRespWithCount(c, 0, nil, fmt.Errorf("without a correct state"))
         return
     }
@@ -140,7 +139,7 @@ func GetTasksByUsernamePriority(c *gin.Context) {
     page := GetPageInfo(c)
     statePriority := GetStatePriorityInfo(c)
     p := statePriority.Priority
-    if p <= UninitializedPriority || p >= UpperBoundPriority {
+    if p <= models.UninitializedPriority || p >= models.UpperBoundPriority {
         doRespWithCount(c, 0, nil, fmt.Errorf("without a correct priority"))
         return
     }
@@ -168,10 +167,36 @@ func ChangeTaskState(c *gin.Context) {
         return
     }
     log.GetLogger().Infof("user:%s, update task %u, state %u", user, req.ID, req.State)
-    err := dal.UpdateTaskState(dal.FetchSession(), req.ID, req.State)
+
+    session := dal.FetchSession()
+    if err := session.Begin(); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    defer session.Rollback()
+
+    task, err := dal.SelectTasksByTaskID(session, req.ID)
     if err != nil {
         doResp(c, nil, err)
+        return
     }
+    if task.State != models.DoneNotDeleted && task.State != models.DoneDeleted {
+        if req.State == models.DoneDeleted || req.State == models.DoneNotDeleted {
+            err = dal.UpdateDoneTime(session, req.ID)
+            if err != nil {
+                doResp(c, nil, err)
+                return
+            }
+        }
+    }
+
+    err = dal.UpdateTaskState(session, req.ID, req.State)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+
+    err = session.Commit()
     doResp(c, "update state successfully", nil)
 }
 
@@ -193,6 +218,68 @@ func ChangeTaskPriority(c *gin.Context) {
     err := dal.UpdateTaskPriority(dal.FetchSession(), req.ID, req.Priority)
     if err != nil {
         doResp(c, nil, err)
+        return
     }
     doResp(c, "update priority successfully", nil)
+}
+
+func TaskModify(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        return
+    }
+
+    req := &models.TaskUpdate{}
+    if err := c.BindJSON(req); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+
+    log.GetLogger().Infof("user:%s, update task %u, state %u", user, req.ID, req.State)
+
+    session := dal.FetchSession()
+    if err := session.Begin(); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    defer session.Rollback()
+
+    task, err := dal.SelectTasksByTaskID(session, req.ID)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    if task.State != models.DoneNotDeleted && task.State != models.DoneDeleted {
+        if req.State == models.DoneDeleted || req.State == models.DoneNotDeleted {
+            err = dal.UpdateDoneTime(session, req.ID)
+            if err != nil {
+                doResp(c, nil, err)
+                return
+            }
+        }
+    }
+
+    err = dal.UpdateTask(session, req.ID, req)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+
+    err = session.Commit()
+    doResp(c, "task modify successfully", nil)
+}
+
+func GetTaskTagsByUsername(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        return
+    }
+    page := GetPageInfo(c)
+    log.GetLogger().Info("Get Task tags by username, user: %s, page: %v", user, page)
+    count, tags, err := dal.SelectTaskTagsByUsername(dal.FetchSession(), user, page)
+    if err != nil {
+        doRespWithCount(c, count, nil, err)
+        return
+    }
+    doRespWithCount(c, count, tags, nil)
 }
