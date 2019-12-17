@@ -82,7 +82,7 @@ type TagResult struct {
 func SelectTaskTagsByUsername(session *Session, username string, page *PageInfo) (int, *TagResult, error) {
     c := sqlc.NewSQLc(TaskTable)
     SQL := fmt.Sprintf("GROUP BY tag")
-    c.And(sqlc.Equal("username", username)).Ext(sqlc.Exp(SQL)).Ext(page.ToLimit())
+    c.And(sqlc.Equal("username", username)).And(sqlc.In("state",models.ActiveNotDeleted,models.DoneNotDeleted,models.ExpiredNotDeleted)).Ext(sqlc.Exp(SQL)).Ext(page.ToLimit())
     count, err := session.Count(c)
     if err != nil {
         return count, &TagResult{}, err
