@@ -27,7 +27,7 @@ type TaskInsert struct {
     Content    string `json:"content"`
     CreateTime string `json:"create_time"`
     ModifyTime string `json:"modify_time"`
-    Tag        string `json:"tag"`
+    Tag        string `json:"tag" binding:"required"`
     DoneTime   string `json:"done_time"`
     DDLTime    string `json:"ddl_time"`
 }
