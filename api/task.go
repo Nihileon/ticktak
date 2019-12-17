@@ -14,6 +14,8 @@ type AddTaskReq struct {
     State    uint   `json:"state"`
     Priority uint   `json:"priority"`
     Content  string `json:"content" binding:"required"`
+    Tag      string `json:"tag"`
+    DDLTime  string `json:"ddl_time"`
 }
 type AddTaskResp struct {
     Id int64 `json:"id"`
@@ -43,6 +45,8 @@ func AddTask(c *gin.Context) {
         State:    req.State,
         Priority: req.Priority,
         Content:  req.Content,
+        DDLTime:  req.DDLTime,
+        Tag:      req.Tag,
     }
 
     session := dal.FetchSession()
