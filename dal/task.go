@@ -75,16 +75,25 @@ func SelectTasksByUsername(session *Session, username string, page *PageInfo) (i
     return count, tasks, err
 }
 
-func SelectTaskTagsByUsername(session *Session, username string, page *PageInfo) (int, []models.TaskTagSelect, error) {
+type TagResult struct {
+    Tags []string `json:"tags"`
+}
+
+func SelectTaskTagsByUsername(session *Session, username string, page *PageInfo) (int, *TagResult, error) {
     c := sqlc.NewSQLc(TaskTable)
-    c.And(sqlc.Equal("username", username)).Ext(page.ToLimit())
+    SQL := fmt.Sprintf("GROUP BY tag")
+    c.And(sqlc.Equal("username", username)).Ext(sqlc.Exp(SQL)).Ext(page.ToLimit())
     count, err := session.Count(c)
     if err != nil {
-        return count, nil, err
+        return count, &TagResult{}, err
     }
     tags := []models.TaskTagSelect{}
+    result := &TagResult{}
     err = session.Select(c, &tags)
-    return count, tags, err
+    for _, j := range tags {
+        result.Tags = append(result.Tags, j.Tag)
+    }
+    return count, result, err
 }
 
 func UpdateTaskState(session *Session, id int64, state uint) error {
