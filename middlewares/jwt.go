@@ -34,7 +34,6 @@ func doResp(c *gin.Context, data interface{}, err error) {
     })
 }
 
-// JWTAuth 中间件，检查token
 func JWTAuth() gin.HandlerFunc {
     return func(c *gin.Context) {
         token := c.Request.Header.Get("token")
@@ -43,9 +42,7 @@ func JWTAuth() gin.HandlerFunc {
             c.Abort()
             return
         }
-
         log.GetLogger().Info("get token: ", token)
-
         j := NewJWT()
         // parseToken 解析token包含的信息
         claims, err := j.ParseToken(token)
@@ -64,18 +61,16 @@ func JWTAuth() gin.HandlerFunc {
     }
 }
 
-// JWT 签名结构
 type JWT struct {
     SigningKey []byte
 }
 
-// 一些常量
 var (
-    TokenExpired     error  = errors.New("token is expired")
-    TokenNotValidYet error  = errors.New("token not active yet")
-    TokenMalformed   error  = errors.New("that's not even a token")
-    TokenInvalid     error  = errors.New("couldn't handle this token:")
-    SignKey          string = "nihileon"
+    TokenExpired     = errors.New("token is expired")
+    TokenNotValidYet = errors.New("token not active yet")
+    TokenMalformed   = errors.New("that's not even a token")
+    TokenInvalid     = errors.New("couldn't handle this token")
+    SignKey          = "nihileon"
 )
 
 func NewJWT() *JWT {
