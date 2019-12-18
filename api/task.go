@@ -24,6 +24,7 @@ type AddTaskResp struct {
 func AddTask(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     req := &AddTaskReq{}
@@ -75,7 +76,7 @@ func AddTask(c *gin.Context) {
     doResp(c, resp, err)
 }
 
-func GetStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityUpdate {
+func getStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityUpdate {
     info := &models.TaskStatePriorityUpdate{
         State:    models.UninitializedState,
         Priority: models.UninitializedPriority,
@@ -102,6 +103,7 @@ func GetStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityUpdate {
 func GetTasksByUsername(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     page := GetPageInfo(c)
@@ -117,10 +119,11 @@ func GetTasksByUsername(c *gin.Context) {
 func GetTasksByUsernameState(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     page := GetPageInfo(c)
-    statePriority := GetStatePriorityInfo(c)
+    statePriority := getStatePriorityInfo(c)
     s := statePriority.State
     if s <= models.UninitializedState || s >= models.UpperBoundState {
         doRespWithCount(c, 0, nil, fmt.Errorf("without a correct state"))
@@ -138,10 +141,11 @@ func GetTasksByUsernameState(c *gin.Context) {
 func GetTasksByUsernamePriority(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     page := GetPageInfo(c)
-    statePriority := GetStatePriorityInfo(c)
+    statePriority := getStatePriorityInfo(c)
     p := statePriority.Priority
     if p <= models.UninitializedPriority || p >= models.UpperBoundPriority {
         doRespWithCount(c, 0, nil, fmt.Errorf("without a correct priority"))
@@ -159,6 +163,7 @@ func GetTasksByUsernamePriority(c *gin.Context) {
 func ChangeTaskState(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     type updateState struct {
@@ -207,6 +212,7 @@ func ChangeTaskState(c *gin.Context) {
 func ChangeTaskPriority(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     type updatePriority struct {
@@ -230,9 +236,9 @@ func ChangeTaskPriority(c *gin.Context) {
 func TaskModify(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
-
     req := &models.TaskUpdate{}
     if err := c.BindJSON(req); err != nil {
         doResp(c, nil, err)
@@ -276,6 +282,7 @@ func TaskModify(c *gin.Context) {
 func GetTaskTagsByUsername(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     page := GetPageInfo(c)
@@ -291,6 +298,7 @@ func GetTaskTagsByUsername(c *gin.Context) {
 func UpdateTaskStateIfExpired(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     log.GetLogger().Info("Update task state if expired by username, user: %s", user)
@@ -299,7 +307,7 @@ func UpdateTaskStateIfExpired(c *gin.Context) {
         doResp(c, "update state if expired", nil)
         return
     }
-    if err!=nil{
+    if err != nil {
         doResp(c, "update state if expired", err)
         return
     }
