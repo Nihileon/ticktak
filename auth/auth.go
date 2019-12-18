@@ -88,8 +88,8 @@ func generateToken(c *gin.Context, user *models.UserSelect) {
     claims := models.CustomClaims{
         Username: user.Username,
         StandardClaims: jwt_go.StandardClaims{
-            NotBefore: int64(time.Now().Unix() - 1000),
-            ExpiresAt: int64(time.Now().Unix() + 3600),
+            NotBefore: time.Now().Unix() - 1000,
+            ExpiresAt: time.Now().Unix() + 3600*12,
             Issuer:    "nihileon",
         },
     }

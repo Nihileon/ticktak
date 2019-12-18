@@ -287,3 +287,21 @@ func GetTaskTagsByUsername(c *gin.Context) {
     }
     doRespWithCount(c, count, tags, nil)
 }
+
+func UpdateTaskStateIfExpired(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        return
+    }
+    log.GetLogger().Info("Update task state if expired by username, user: %s", user)
+    err := dal.UpdateTaskStateIfExpired(dal.FetchSession(), user)
+    if err != nil && "Exec affect 0 row" == err.Error() {
+        doResp(c, "update state if expired", nil)
+        return
+    }
+    if err!=nil{
+        doResp(c, "update state if expired", err)
+        return
+    }
+    doResp(c, "update state if expired", nil)
+}

@@ -147,8 +147,16 @@ func DeleteTask(session *Session, id int64) error {
     c := sqlc.NewSQLc(TaskTable)
     c.And(sqlc.Equal("id", id))
     err := session.Delete(c)
-    if err != nil {
-        return err
-    }
-    return nil
+    return err
+}
+
+func UpdateTaskStateIfExpired(session *Session, username string) error{
+    task := &models.TaskStatePriorityUpdate{}
+    task.ModifyTime = timeStampNow()
+    task.State = models.ExpiredNotDeleted
+    c := sqlc.NewSQLc(TaskTable)
+    SQL := fmt.Sprintf("ddl_time < '%s'", timeStampNow())
+    c.And(sqlc.Equal("username", username)).And(sqlc.Equal("state", models.ActiveNotDeleted)).And(sqlc.Exp(SQL))
+    err := session.Update(c, *task)
+    return err
 }

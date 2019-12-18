@@ -51,6 +51,7 @@ func main() {
     platformAPI.GET("/task/list/priority/", api.GetTasksByUsernamePriority)
     platformAPI.POST("/task/modify", api.TaskModify)
     platformAPI.GET("/task/tag/list", api.GetTaskTagsByUsername)
+    platformAPI.GET("/task/update/state/expired", api.UpdateTaskStateIfExpired)
 
     r.Run(config.ListenAddr)
 }
