@@ -82,7 +82,7 @@ type TagResult struct {
 func SelectTaskTagsByUsername(session *Session, username string, page *PageInfo) (int, *TagResult, error) {
     c := sqlc.NewSQLc(TaskTable)
     SQL := fmt.Sprintf("GROUP BY tag")
-    c.And(sqlc.Equal("username", username)).And(sqlc.In("state",models.ActiveNotDeleted,models.DoneNotDeleted,models.ExpiredNotDeleted)).Ext(sqlc.Exp(SQL)).Ext(page.ToLimit())
+    c.And(sqlc.Equal("username", username)).And(sqlc.In("state", models.ActiveNotDeleted, models.DoneNotDeleted, models.ExpiredNotDeleted)).Ext(sqlc.Exp(SQL)).Ext(page.ToLimit())
     count, err := session.Count(c)
     if err != nil {
         return count, &TagResult{}, err
@@ -97,7 +97,7 @@ func SelectTaskTagsByUsername(session *Session, username string, page *PageInfo)
 }
 
 func UpdateTaskState(session *Session, id int64, state uint) error {
-    task := &models.TaskStatePriorityUpdate{}
+    task := &models.TaskStateUpdate{}
     task.ModifyTime = timeStampNow()
     task.State = state
     c := sqlc.NewSQLc(TaskTable)
@@ -116,7 +116,7 @@ func UpdateDoneTime(session *Session, id int64) error {
 }
 
 func UpdateTaskPriority(session *Session, id int64, priority uint) error {
-    task := &models.TaskStatePriorityUpdate{}
+    task := &models.TaskPriorityUpdate{}
     task.ModifyTime = timeStampNow()
     task.Priority = priority
     c := sqlc.NewSQLc(TaskTable)
@@ -150,8 +150,8 @@ func DeleteTask(session *Session, id int64) error {
     return err
 }
 
-func UpdateTaskStateIfExpired(session *Session, username string) error{
-    task := &models.TaskStatePriorityUpdate{}
+func UpdateTaskStateIfExpired(session *Session, username string) error {
+    task := &models.TaskStateUpdate{}
     task.ModifyTime = timeStampNow()
     task.State = models.ExpiredNotDeleted
     c := sqlc.NewSQLc(TaskTable)

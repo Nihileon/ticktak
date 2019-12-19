@@ -76,8 +76,8 @@ func AddTask(c *gin.Context) {
     doResp(c, resp, err)
 }
 
-func getStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityUpdate {
-    info := &models.TaskStatePriorityUpdate{
+func getStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityInfo {
+    info := &models.TaskStatePriorityInfo{
         State:    models.UninitializedState,
         Priority: models.UninitializedPriority,
     }

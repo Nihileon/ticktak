@@ -47,13 +47,13 @@ type TaskSelect struct {
 
 type TaskUpdate struct {
     ID         int64  `json:"id" binding:"required"`
-    Title      string `json:"title"`
-    State      uint   `json:"state"`
-    Priority   uint   `json:"priority"`
-    Content    string `json:"content"`
-    ModifyTime string `json:"modify_time"`
-    Tag        string `json:"tag"`
-    DDLTime    string `json:"ddl_time"`
+    Title      string `json:"title" binding:"required"`
+    State      uint   `json:"state" binding:"required"`
+    Priority   uint   `json:"priority" binding:"required"`
+    Content    string `json:"content" binding:"required"`
+    ModifyTime string `json:"modify_time" binding:"required"`
+    Tag        string `json:"tag" binding:"required"`
+    DDLTime    string `json:"ddl_time" binding:"required"`
 }
 
 type TaskTagSelect struct {
@@ -64,19 +64,23 @@ type TaskUsernameUpdate struct {
     Username string `json:"username"`
 }
 
-type TaskStatePriorityUpdate struct {
-    State      uint   `json:"state"`
-    Priority   uint   `json:"priority"`
+type TaskStatePriorityInfo struct {
+    State    uint `json:"state"`
+    Priority uint `json:"priority"`
+}
+
+type TaskPriorityUpdate struct {
+    Priority   uint   `json:"priority" binding:"required"`
+    ModifyTime string `json:"modify_time"`
+}
+
+type TaskStateUpdate struct {
+    State      uint   `json:"state" binding:"required"`
     ModifyTime string `json:"modify_time"`
 }
 
 type TaskDoneTimeUpdate struct {
-    DoneTime string `json:"done_time"`
-}
-
-type TaskStatePriorityInfo struct {
-    State    uint `json:"state"`
-    Priority uint `json:"priority"`
+    DoneTime string `json:"done_time" binding:"required"`
 }
 
 type TaskTagInfo struct {
