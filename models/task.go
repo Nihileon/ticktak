@@ -51,7 +51,7 @@ type TaskUpdate struct {
     State      uint   `json:"state" binding:"required"`
     Priority   uint   `json:"priority" binding:"required"`
     Content    string `json:"content" binding:"required"`
-    ModifyTime string `json:"modify_time" binding:"required"`
+    ModifyTime string `json:"modify_time"`
     Tag        string `json:"tag" binding:"required"`
     DDLTime    string `json:"ddl_time" binding:"required"`
 }
