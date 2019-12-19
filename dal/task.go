@@ -143,9 +143,9 @@ func UpdateTaskUsername(session *Session, oldUsername, newUsername string) error
     return err
 }
 
-func DeleteTask(session *Session, id int64) error {
+func DeleteTask(session *Session, id int64, username string) error {
     c := sqlc.NewSQLc(TaskTable)
-    c.And(sqlc.Equal("id", id))
+    c.And(sqlc.Equal("id", id)).And(sqlc.Equal("username", username))
     err := session.Delete(c)
     return err
 }

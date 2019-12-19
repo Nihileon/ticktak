@@ -313,3 +313,22 @@ func UpdateTaskStateIfExpired(c *gin.Context) {
     }
     doResp(c, "update state if expired", nil)
 }
+
+func DeleteTasksByTaskID(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        doResp(c, "You don't have permissions.", nil)
+        return
+    }
+    type TaskDelete struct {
+        Id int64 `json:"id"`
+    }
+    req := &TaskDelete{}
+    if err := c.BindJSON(req); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    log.GetLogger().Info("delete task by task id and username, user: %s", user)
+    err := dal.DeleteTask(dal.FetchSession(), req.Id, user)
+    doResp(c, "delete task by id and username", err)
+}
