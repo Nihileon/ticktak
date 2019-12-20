@@ -22,11 +22,14 @@ create table if not exists t_task
     `content`     text,
     `create_time` timestamp        NOT NULL DEFAULT '1999-01-01 00:00:00',
     `modify_time` timestamp        NOT NULL DEFAULT '1999-01-01 00:00:00',
+    `ddl_time`    timestamp        NOT NULL DEFAULT '1999-01-01 00:00:00',
+    `done_time`   timestamp        NOT NULL DEFAULT '1999-01-01 00:00:00',
+    `tag`         VARCHAR(256)      NOT NULL DEFAULT 'default',
     PRIMARY KEY (`id`),
     KEY `idx_username` (`username`),
     KEY `idx_username_title` (`username`, `title`),
-    KEY `idx_username_priority` (`username`,`priority`),
-    KEY `idx_username_state` (`username`,`state`)
+    KEY `idx_username_priority` (`username`, `priority`),
+    KEY `idx_username_state` (`username`, `state`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = 'item table';
 

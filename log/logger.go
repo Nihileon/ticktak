@@ -1,7 +1,7 @@
 package log
 
 import (
-    logrus "github.com/Sirupsen/logrus"
+    "github.com/Sirupsen/logrus"
     "os"
     "time"
 )

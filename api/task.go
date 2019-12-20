@@ -9,30 +9,13 @@ import (
     "strconv"
 )
 
-const (
-    UninitializedState = iota
-    ActiveNotDeleted
-    DoneNotDeleted
-    ExpiredNotDeleted
-    ActiveOrExpiredDeleted
-    DoneDeleted
-    UpperBoundState
-)
-
-const (
-    UninitializedPriority = iota
-    P1
-    P2
-    P3
-    P4
-    UpperBoundPriority
-)
-
 type AddTaskReq struct {
     Title    string `json:"title" binding:"required"`
     State    uint   `json:"state"`
     Priority uint   `json:"priority"`
     Content  string `json:"content" binding:"required"`
+    Tag      string `json:"tag"`
+    DDLTime  string `json:"ddl_time"`
 }
 type AddTaskResp struct {
     Id int64 `json:"id"`
@@ -41,6 +24,7 @@ type AddTaskResp struct {
 func AddTask(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     req := &AddTaskReq{}
@@ -48,11 +32,11 @@ func AddTask(c *gin.Context) {
         doResp(c, nil, err)
         return
     }
-    if req.State <= UninitializedState || req.State >= UpperBoundState {
-        req.State = ActiveNotDeleted
+    if req.State <= models.UninitializedState || req.State >= models.UpperBoundState {
+        req.State = models.ActiveNotDeleted
     }
-    if req.Priority <= UninitializedPriority || req.Priority >= UpperBoundPriority {
-        req.Priority = P2
+    if req.Priority <= models.UninitializedPriority || req.Priority >= models.UpperBoundPriority {
+        req.Priority = models.P2
     }
 
     log.GetLogger().Info("Add task, user: %s, title: %v", user, req.Title)
@@ -62,20 +46,40 @@ func AddTask(c *gin.Context) {
         State:    req.State,
         Priority: req.Priority,
         Content:  req.Content,
+        DDLTime:  req.DDLTime,
+        Tag:      req.Tag,
     }
 
-    id, err := dal.InsertTask(dal.FetchSession(), insertTask)
+    session := dal.FetchSession()
+    if err := session.Begin(); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    defer session.Rollback()
+
+    id, err := dal.InsertTask(session, insertTask)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    if req.State == models.DoneNotDeleted || req.State == models.DoneDeleted {
+        err = dal.UpdateDoneTime(session, id)
+        if err != nil {
+            doResp(c, nil, err)
+            return
+        }
+    }
     resp := &AddTaskResp{
         Id: id,
     }
+    err = session.Commit()
     doResp(c, resp, err)
-
 }
 
-func GetStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityUpdate {
-    info := &models.TaskStatePriorityUpdate{
-        State:    UninitializedState,
-        Priority: UninitializedPriority,
+func getStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityInfo {
+    info := &models.TaskStatePriorityInfo{
+        State:    models.UninitializedState,
+        Priority: models.UninitializedPriority,
     }
     params := c.Request.URL.Query()
 
@@ -99,6 +103,7 @@ func GetStatePriorityInfo(c *gin.Context) *models.TaskStatePriorityUpdate {
 func GetTasksByUsername(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     page := GetPageInfo(c)
@@ -114,12 +119,13 @@ func GetTasksByUsername(c *gin.Context) {
 func GetTasksByUsernameState(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     page := GetPageInfo(c)
-    statePriority := GetStatePriorityInfo(c)
+    statePriority := getStatePriorityInfo(c)
     s := statePriority.State
-    if s <= UninitializedState || s >= UpperBoundState {
+    if s <= models.UninitializedState || s >= models.UpperBoundState {
         doRespWithCount(c, 0, nil, fmt.Errorf("without a correct state"))
         return
     }
@@ -135,12 +141,13 @@ func GetTasksByUsernameState(c *gin.Context) {
 func GetTasksByUsernamePriority(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     page := GetPageInfo(c)
-    statePriority := GetStatePriorityInfo(c)
+    statePriority := getStatePriorityInfo(c)
     p := statePriority.Priority
-    if p <= UninitializedPriority || p >= UpperBoundPriority {
+    if p <= models.UninitializedPriority || p >= models.UpperBoundPriority {
         doRespWithCount(c, 0, nil, fmt.Errorf("without a correct priority"))
         return
     }
@@ -156,6 +163,7 @@ func GetTasksByUsernamePriority(c *gin.Context) {
 func ChangeTaskState(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     type updateState struct {
@@ -168,16 +176,43 @@ func ChangeTaskState(c *gin.Context) {
         return
     }
     log.GetLogger().Infof("user:%s, update task %u, state %u", user, req.ID, req.State)
-    err := dal.UpdateTaskState(dal.FetchSession(), req.ID, req.State)
+
+    session := dal.FetchSession()
+    if err := session.Begin(); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    defer session.Rollback()
+
+    task, err := dal.SelectTasksByTaskID(session, req.ID)
     if err != nil {
         doResp(c, nil, err)
+        return
     }
+    if task.State != models.DoneNotDeleted && task.State != models.DoneDeleted {
+        if req.State == models.DoneDeleted || req.State == models.DoneNotDeleted {
+            err = dal.UpdateDoneTime(session, req.ID)
+            if err != nil {
+                doResp(c, nil, err)
+                return
+            }
+        }
+    }
+
+    err = dal.UpdateTaskState(session, req.ID, req.State)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+
+    err = session.Commit()
     doResp(c, "update state successfully", nil)
 }
 
 func ChangeTaskPriority(c *gin.Context) {
     user, ok := AuthReq(c)
     if !ok {
+        doResp(c, "You don't have permissions.", nil)
         return
     }
     type updatePriority struct {
@@ -193,6 +228,107 @@ func ChangeTaskPriority(c *gin.Context) {
     err := dal.UpdateTaskPriority(dal.FetchSession(), req.ID, req.Priority)
     if err != nil {
         doResp(c, nil, err)
+        return
     }
     doResp(c, "update priority successfully", nil)
+}
+
+func TaskModify(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        doResp(c, "You don't have permissions.", nil)
+        return
+    }
+    req := &models.TaskUpdate{}
+    if err := c.BindJSON(req); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+
+    log.GetLogger().Infof("user:%s, update task %u, state %u", user, req.ID, req.State)
+
+    session := dal.FetchSession()
+    if err := session.Begin(); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    defer session.Rollback()
+
+    task, err := dal.SelectTasksByTaskID(session, req.ID)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    if task.State != models.DoneNotDeleted && task.State != models.DoneDeleted {
+        if req.State == models.DoneDeleted || req.State == models.DoneNotDeleted {
+            err = dal.UpdateDoneTime(session, req.ID)
+            if err != nil {
+                doResp(c, nil, err)
+                return
+            }
+        }
+    }
+
+    err = dal.UpdateTask(session, req.ID, req)
+    if err != nil {
+        doResp(c, nil, err)
+        return
+    }
+
+    err = session.Commit()
+    doResp(c, "task modify successfully", nil)
+}
+
+func GetTaskTagsByUsername(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        doResp(c, "You don't have permissions.", nil)
+        return
+    }
+    page := GetPageInfo(c)
+    log.GetLogger().Info("Get Task tags by username, user: %s, page: %v", user, page)
+    count, tags, err := dal.SelectTaskTagsByUsername(dal.FetchSession(), user, page)
+    if err != nil {
+        doRespWithCount(c, count, nil, err)
+        return
+    }
+    doRespWithCount(c, count, tags, nil)
+}
+
+func UpdateTaskStateIfExpired(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        doResp(c, "You don't have permissions.", nil)
+        return
+    }
+    log.GetLogger().Info("Update task state if expired by username, user: %s", user)
+    err := dal.UpdateTaskStateIfExpired(dal.FetchSession(), user)
+    if err != nil && "Exec affect 0 row" == err.Error() {
+        doResp(c, "update state if expired", nil)
+        return
+    }
+    if err != nil {
+        doResp(c, "update state if expired", err)
+        return
+    }
+    doResp(c, "update state if expired", nil)
+}
+
+func DeleteTasksByTaskID(c *gin.Context) {
+    user, ok := AuthReq(c)
+    if !ok {
+        doResp(c, "You don't have permissions.", nil)
+        return
+    }
+    type TaskDelete struct {
+        Id int64 `json:"id"`
+    }
+    req := &TaskDelete{}
+    if err := c.BindJSON(req); err != nil {
+        doResp(c, nil, err)
+        return
+    }
+    log.GetLogger().Info("delete task by task id and username, user: %s", user)
+    err := dal.DeleteTask(dal.FetchSession(), req.Id, user)
+    doResp(c, "delete task by id and username", err)
 }

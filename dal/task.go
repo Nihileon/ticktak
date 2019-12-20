@@ -46,6 +46,20 @@ func SelectTasksByUsernamePriority(session *Session, username string, priority u
     return count, tasks, err
 }
 
+func SelectTasksByTaskID(session *Session, id int64) (*models.TaskSelect, error) {
+    c := sqlc.NewSQLc(TaskTable)
+    c.And(sqlc.Equal("id", id))
+    task := []models.TaskSelect{}
+    err := session.Select(c, &task)
+    if err != nil {
+        return nil, err
+    }
+    if len(task) != 1 {
+        return nil, fmt.Errorf("select %d rows", len(task))
+    }
+    return &task[0], nil
+}
+
 func SelectTasksByUsername(session *Session, username string, page *PageInfo) (int, []models.TaskSelect, error) {
     c := sqlc.NewSQLc(TaskTable)
     SQL := fmt.Sprintf("id IN (SELECT id FROM %s WHERE username = '%s')",
@@ -61,8 +75,29 @@ func SelectTasksByUsername(session *Session, username string, page *PageInfo) (i
     return count, tasks, err
 }
 
+type TagResult struct {
+    Tags []string `json:"tags"`
+}
+
+func SelectTaskTagsByUsername(session *Session, username string, page *PageInfo) (int, *TagResult, error) {
+    c := sqlc.NewSQLc(TaskTable)
+    SQL := fmt.Sprintf("GROUP BY tag")
+    c.And(sqlc.Equal("username", username)).And(sqlc.In("state", models.ActiveNotDeleted, models.DoneNotDeleted, models.ExpiredNotDeleted)).Ext(sqlc.Exp(SQL)).Ext(page.ToLimit())
+    count, err := session.Count(c)
+    if err != nil {
+        return count, &TagResult{}, err
+    }
+    tags := []models.TaskTagSelect{}
+    result := &TagResult{}
+    err = session.Select(c, &tags)
+    for _, j := range tags {
+        result.Tags = append(result.Tags, j.Tag)
+    }
+    return count, result, err
+}
+
 func UpdateTaskState(session *Session, id int64, state uint) error {
-    task := &models.TaskStatePriorityUpdate{}
+    task := &models.TaskStateUpdate{}
     task.ModifyTime = timeStampNow()
     task.State = state
     c := sqlc.NewSQLc(TaskTable)
@@ -71,8 +106,17 @@ func UpdateTaskState(session *Session, id int64, state uint) error {
     return err
 }
 
+func UpdateDoneTime(session *Session, id int64) error {
+    task := &models.TaskDoneTimeUpdate{}
+    task.DoneTime = timeStampNow()
+    c := sqlc.NewSQLc(TaskTable)
+    c.And(sqlc.Equal("id", id))
+    err := session.Update(c, *task)
+    return err
+}
+
 func UpdateTaskPriority(session *Session, id int64, priority uint) error {
-    task := &models.TaskStatePriorityUpdate{}
+    task := &models.TaskPriorityUpdate{}
     task.ModifyTime = timeStampNow()
     task.Priority = priority
     c := sqlc.NewSQLc(TaskTable)
@@ -99,12 +143,20 @@ func UpdateTaskUsername(session *Session, oldUsername, newUsername string) error
     return err
 }
 
-func DeleteTask(session *Session, id int64) error {
+func DeleteTask(session *Session, id int64, username string) error {
     c := sqlc.NewSQLc(TaskTable)
-    c.And(sqlc.Equal("id", id))
+    c.And(sqlc.Equal("id", id)).And(sqlc.Equal("username", username))
     err := session.Delete(c)
-    if err != nil {
-        return err
-    }
-    return nil
+    return err
+}
+
+func UpdateTaskStateIfExpired(session *Session, username string) error {
+    task := &models.TaskStateUpdate{}
+    task.ModifyTime = timeStampNow()
+    task.State = models.ExpiredNotDeleted
+    c := sqlc.NewSQLc(TaskTable)
+    SQL := fmt.Sprintf("ddl_time < '%s'", timeStampNow())
+    c.And(sqlc.Equal("username", username)).And(sqlc.Equal("state", models.ActiveNotDeleted)).And(sqlc.Exp(SQL))
+    err := session.Update(c, *task)
+    return err
 }
