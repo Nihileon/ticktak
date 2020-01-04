@@ -107,8 +107,9 @@ func GetTasksByUsername(c *gin.Context) {
         return
     }
     page := GetPageInfo(c)
+    order := GetOrderInfo(c)
     log.GetLogger().Info("Get Task by username, user: %s, page: %v", user, page)
-    count, tasks, err := dal.SelectTasksByUsername(dal.FetchSession(), user, page)
+    count, tasks, err := dal.SelectTasksByUsername(dal.FetchSession(), user, order, page)
     if err != nil {
         doRespWithCount(c, count, nil, err)
         return

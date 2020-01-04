@@ -6,7 +6,34 @@ import (
     "github.com/nihileon/ticktak/dal"
     "github.com/nihileon/ticktak/log"
     "strconv"
+    "strings"
 )
+
+func GetOrderInfo(c *gin.Context) *dal.OrderInfo {
+    order := &dal.OrderInfo{
+        OrderParam: dal.DefaultOrderParams,
+        Order:      dal.DefaultOrder,
+    }
+    params := c.Request.URL.Query()
+
+    opV := params["op"]
+    if len(opV) > 0 {
+        p := strings.ToLower(opV[0])
+        if p == "ddl_time" || p == "done_time" || p == "id" {
+            order.OrderParam = p
+        }
+    }
+
+    oV := params["o"]
+    if len(oV) > 0 {
+        p := strings.ToUpper(oV[0])
+        if p == "DESC" || p == "ASC" {
+            order.Order = p
+        }
+    }
+    return order
+
+}
 
 func GetPageInfo(c *gin.Context) *dal.PageInfo {
     page := &dal.PageInfo{
