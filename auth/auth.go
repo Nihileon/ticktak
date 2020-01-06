@@ -57,8 +57,19 @@ func RegisterUser(c *gin.Context) {
     _, err := dal.InsertUser(dal.FetchSession(), req)
     if err != nil {
         doResp(c, nil, err)
+        return
     }
-    doResp(c, "successfully registered", err)
+    login := &models.LoginSelect{
+        Username: req.Username,
+        Password: req.Password,
+    }
+    isPass, user, err := dal.LoginCheck(dal.FetchSession(), login)
+    if !isPass {
+        doResp(c, nil, err)
+        return
+    }
+    data, err := generateToken(user)
+    doResp(c, data, err)
 }
 
 type LoginResult struct {
@@ -73,15 +84,16 @@ func Login(c *gin.Context) {
         return
     }
     isPass, user, err := dal.LoginCheck(dal.FetchSession(), req)
-    if isPass {
-        generateToken(c, user)
+    if !isPass {
+        doResp(c, nil, err)
         return
     }
-    doResp(c, nil, err)
+    data, err := generateToken(user)
+    doResp(c, data, err)
 }
 
 // 生成令牌
-func generateToken(c *gin.Context, user *models.UserSelect) {
+func generateToken(user *models.UserSelect) (*LoginResult, error) {
     j := &middlewares.JWT{
         []byte("nihileon"),
     }
@@ -97,15 +109,14 @@ func generateToken(c *gin.Context, user *models.UserSelect) {
     token, err := j.CreateToken(claims)
 
     if err != nil {
-        doResp(c, nil, fmt.Errorf("login failed"))
-        return
+        return nil, err
     }
 
     log.GetLogger().Info(token)
 
-    data := LoginResult{
+    data := &LoginResult{
         LoginSelect: *user,
         Token:       token,
     }
-    doResp(c, data, nil)
+    return data, nil
 }

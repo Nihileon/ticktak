@@ -9,6 +9,16 @@ func timeStampNow() string {
     return time.Now().Format("2006-01-02 15:04:05")
 }
 
+type OrderInfo struct {
+    OrderParam string `json:"op"`
+    Order      string `json:"order"`
+}
+
+const (
+    DefaultOrder = "DESC"
+    DefaultOrderParams = "id"
+)
+
 type PageInfo struct {
     PageNum   int `json:"pn"`
     RecordNum int `json:"rn"`
