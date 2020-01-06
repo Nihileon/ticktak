@@ -60,6 +60,7 @@ func SelectTasksByTaskID(session *Session, id int64) (*models.TaskSelect, error)
     return &task[0], nil
 }
 
+
 func SelectTasksByUsername(session *Session, username string, orderInfo *OrderInfo, page *PageInfo) (int, []models.TaskSelect, error) {
     c := sqlc.NewSQLc(TaskTable)
     SQL := fmt.Sprintf("id IN (SELECT id FROM %s WHERE username = '%s')",
