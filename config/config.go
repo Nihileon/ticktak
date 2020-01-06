@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
     "fmt"
@@ -16,9 +16,8 @@ type Config struct {
     ListenAddr    string   `yaml:"ListenAddr"`
 }
 
-func InitConfig() (*Config, error) {
+func InitConfig(confPath string) (*Config, error) {
     config := &Config{}
-    confPath := "./conf/conf.yaml"
     log.GetLogger().Info("[conf path] is: %s", confPath)
     confBuf, err := ioutil.ReadFile(confPath)
     if err != nil {

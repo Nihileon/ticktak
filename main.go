@@ -5,6 +5,7 @@ import (
     "github.com/gin-gonic/gin"
     "github.com/nihileon/ticktak/api"
     "github.com/nihileon/ticktak/auth"
+    "github.com/nihileon/ticktak/config"
     "github.com/nihileon/ticktak/dal"
     "github.com/nihileon/ticktak/log"
     "github.com/nihileon/ticktak/middlewares"
@@ -13,20 +14,20 @@ import (
 func main() {
     log.Init()
 
-    // config
-    config, err := InitConfig()
+    // conf
+    conf, err := config.InitConfig("./conf/conf.yaml")
     if err != nil {
-        panic(fmt.Errorf("init config error: %s", err))
+        panic(fmt.Errorf("init conf error: %s", err))
     }
 
     // MySQL
-    err = dal.InitDB(config.MysqlDSN)
+    err = dal.InitDB(conf.MysqlDSN)
     if err != nil {
         panic(err)
     }
 
     // Redis Or Map
-    err = dal.InitKV(config.RedisAddr, config.MemoryOrRedis)
+    err = dal.InitKV(conf.RedisAddr, conf.MemoryOrRedis)
     if err != nil {
         panic(err)
     }
@@ -54,5 +55,5 @@ func main() {
     platformAPI.GET("/task/update/state/expired", api.UpdateTaskStateIfExpired)
     platformAPI.POST("/task/delete/id", api.DeleteTasksByTaskID)
 
-    r.Run(config.ListenAddr)
+    r.Run(conf.ListenAddr)
 }

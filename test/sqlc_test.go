@@ -1,17 +1,18 @@
-package sqlc
+package test
 
 import (
     "fmt"
+    sqlc2 "github.com/nihileon/ticktak/sqlc"
     "testing"
 )
 
 func TestSelect(t *testing.T) {
-    sqlc := NewSQLc("my_table")
+    sqlc := sqlc2.NewSQLc("my_table")
     sqlc.And(
-        Equal("name", "testName")).And(
-        Between("age", 1, 19)).And(
-        In("sex", "male", "female")).Ext(
-        Limit(0, 10))
+        sqlc2.Equal("name", "testName")).And(
+        sqlc2.Between("age", 1, 19)).And(
+        sqlc2.In("sex", "male", "female")).Ext(
+        sqlc2.Limit(0, 10))
 
     type selectFields struct {
         id   uint64 `json:"f_id"`
@@ -26,7 +27,7 @@ func TestSelect(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-    sqlc := NewSQLc("my_table")
+    sqlc := sqlc2.NewSQLc("my_table")
 
     type inputFields struct {
         Id   uint64  `json:"f_id"`
@@ -47,14 +48,14 @@ func TestInsert(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-    sqlc := NewSQLc("my_table")
+    sqlc := sqlc2.NewSQLc("my_table")
 
     type inputFields struct {
         Age  float32 `json:"f_age"`
         Name string  `json:"f_name"`
     }
 
-    sqlc.And(Equal("id", 232))
+    sqlc.And(sqlc2.Equal("id", 232))
     input := inputFields{
         Age:  19.3,
         Name: "testName",
@@ -68,9 +69,9 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-    sqlc := NewSQLc("my_table")
+    sqlc := sqlc2.NewSQLc("my_table")
 
-    sqlc.And(Equal("id", 32434))
+    sqlc.And(sqlc2.Equal("id", 32434))
     sql, err := sqlc.ToDelete()
     if err != nil {
         t.Errorf("delete failed, %s", err)
