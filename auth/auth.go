@@ -83,6 +83,10 @@ func Login(c *gin.Context) {
         doResp(c, nil, err)
         return
     }
+    if validUsername.MatchString(req.Username) == false {
+        doResp(c, nil, fmt.Errorf("invalid username"))
+        return
+    }
     isPass, user, err := dal.LoginCheck(dal.FetchSession(), req)
     if !isPass {
         doResp(c, nil, err)
@@ -95,7 +99,7 @@ func Login(c *gin.Context) {
 // 生成令牌
 func generateToken(user *models.UserSelect) (*LoginResult, error) {
     j := &middlewares.JWT{
-        []byte("nihileon"),
+        SigningKey: []byte("nihileon"),
     }
     claims := models.CustomClaims{
         Username: user.Username,

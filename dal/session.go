@@ -13,7 +13,7 @@ import (
 
 const (
     UserTable = "t_user"
-    TaskTable= "t_task"
+    TaskTable = "t_task"
 )
 
 const (
@@ -38,9 +38,8 @@ func InitDB(dsn string) error {
     return nil
 }
 
-var ErrDupkeyInsert = errors.New("Insert dupkey error")
-var ErrAffectNoRows = errors.New("Exec affect 0 row")
-var ErrSelectZeroRows = errors.New("Select zero rows")
+var ErrDupkeyInsert = errors.New("insert dupkey error")
+var ErrAffectNoRows = errors.New("exec affect 0 row")
 
 func FetchSession() *Session {
     return &Session{
@@ -56,7 +55,7 @@ type Session struct {
 
 func (s *Session) Begin() error {
     if s.tx != nil {
-        return errors.New("Tx is already exist")
+        return errors.New("tx is already exist")
     }
     currTime := time.Now()
     tx, err := s.conn.Begin()
@@ -145,7 +144,6 @@ func (s *Session) Select(c *sqlc.SQLc, input interface{}) error {
 
     for rows.Next() {
         val = reflect.Indirect(reflect.New(baseType))
-
         for i := 0; i < baseType.NumField(); i++ {
             mapper[baseType.Field(i).Tag.Get("json")] = reflect.Indirect(val).Field(i).Addr().Interface()
         }

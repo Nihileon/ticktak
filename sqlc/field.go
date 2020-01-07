@@ -28,6 +28,7 @@ func NewFieldMap(input interface{}) (fields Fields, err error) {
 	return fields, nil
 }
 
+//
 func NewFieldSlice(input interface{}) (fields Fields, err error) {
 	value := reflect.ValueOf(input)
 	if value.Kind() == reflect.Ptr {
